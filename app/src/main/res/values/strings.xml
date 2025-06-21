@@ -3,4 +3,7 @@
     <string name="fab_add">Add a new event</string>
     <string name="cost_in_rs">Rs. %1$s</string>
     <string name="string_total">Total</string>
+    <string name="back_button">Back</string>
+    <string name="app_screen_title_events">Expense Tracker</string>
+    <string name="app_screen_title_expenses">Event Details</string>
 </resources>

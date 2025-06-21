@@ -4,8 +4,10 @@ import java.util.Date
 
 data class Event(
     val id: Int,
-    var eventName: String,
-    var totalCost: Int = 0,
-    var expensesList: List<Expense> = listOf(),
+    val eventName: String,
+    val expensesList: List<Expense> = listOf(),
     val createdAt: Date = Date()
-)
+) {
+    val totalCost: Int
+        get() = expensesList.sumOf { it.expenseCost }
+}
