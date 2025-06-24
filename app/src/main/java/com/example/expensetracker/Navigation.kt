@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -29,6 +30,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.expensetracker.ui.screens.events.EventsScreen
 import com.example.expensetracker.ui.screens.expenses.ExpensesScreen
+import com.example.expensetracker.viewModels.AppViewModelProvider
 
 enum class AppScreen(@StringRes val title: Int) {
     Events(title = R.string.app_screen_title_events),
@@ -81,7 +83,10 @@ fun AppBar(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Navigation(navController: NavHostController = rememberNavController()) {
+fun Navigation(
+    modifier: Modifier = Modifier,
+    navController: NavHostController = rememberNavController(),
+) {
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
@@ -109,7 +114,10 @@ fun Navigation(navController: NavHostController = rememberNavController()) {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(route = AppScreen.Events.name) {
-                EventsScreen(onEventClick = { eventId -> onEventClick(navController, eventId) })
+                EventsScreen(
+                    onEventClick = { eventId -> onEventClick(navController, eventId) },
+                    viewModel = viewModel(factory = AppViewModelProvider.Factory)
+                )
             }
             composable(
                 route = AppScreen.Expenses.name + "/{eventId}",
@@ -119,7 +127,10 @@ fun Navigation(navController: NavHostController = rememberNavController()) {
                     }
                 )
             ) { backstackEntry ->
-                ExpensesScreen(eventId = requireNotNull(backstackEntry.arguments?.getInt("eventId")))
+                ExpensesScreen(
+                    eventId = requireNotNull(backstackEntry.arguments?.getInt("eventId")),
+                    viewModel = viewModel(factory = AppViewModelProvider.Factory)
+                )
             }
         }
     }

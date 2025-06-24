@@ -21,42 +21,33 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.expensetracker.R
-import com.example.expensetracker.data.getExpenseList
 import com.example.expensetracker.entities.Expense
-import com.example.expensetracker.viewModels.EventViewModel
+import com.example.expensetracker.viewModels.ExpenseViewModel
 
 @Composable
 fun ExpensesScreen(
     eventId: Int,
-    modifier: Modifier = Modifier,
-    eventViewModel: EventViewModel = viewModel()
+    viewModel: ExpenseViewModel,
+    modifier: Modifier = Modifier
 ) {
-    val event = eventViewModel.getEvent(eventId)
+    val expenses by viewModel.getExpenses(eventId).collectAsState()
+    val totalCost by viewModel.getTotalCost(eventId).collectAsState()
 
     Column(modifier = modifier) {
-        if (event != null) {
-            TotalCostCard(totalCost = event.expensesList.sumOf { it.expenseCost })
-            Spacer(modifier = Modifier.height(32.dp))
-            ExpenseList(
-                expenseList = event.expensesList,
-                modifier = Modifier.fillMaxSize()
-            )
-        } else {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(text = "Invalid event.", style = MaterialTheme.typography.bodyMedium)
-            }
-        }
+        TotalCostCard(totalCost = totalCost)
+        Spacer(modifier = Modifier.height(32.dp))
+        ExpenseList(
+            expenseList = expenses.expenses,
+            modifier = Modifier.fillMaxSize()
+        )
     }
 }
 
@@ -150,29 +141,20 @@ fun TotalCostCard(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun EventScreenPreview(eventViewModel: EventViewModel = viewModel()) {
-    ExpensesScreen(
-        eventId = 0,
-        modifier = Modifier.fillMaxSize()
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun TotalCostCardPreview() {
-    TotalCostCard(totalCost = 2400)
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ExpenseListPreview(eventViewModel: EventViewModel = viewModel()) {
-    ExpenseList(expenseList = getExpenseList())
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ExpenseItemPreview() {
-    ExpenseItem(getExpenseList()[0])
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun TotalCostCardPreview() {
+//    TotalCostCard(totalCost = 2400)
+//}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun ExpenseListPreview(eventScreenViewModel: EventScreenViewModel = viewModel()) {
+//    ExpenseList(expenseList = getExpenseList())
+//}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun ExpenseItemPreview() {
+//    ExpenseItem(getExpenseList()[0])
+//}

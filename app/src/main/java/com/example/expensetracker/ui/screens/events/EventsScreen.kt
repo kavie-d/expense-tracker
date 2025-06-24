@@ -21,6 +21,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,27 +30,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.expensetracker.R
-import com.example.expensetracker.data.getEventList
 import com.example.expensetracker.entities.Event
 import com.example.expensetracker.viewModels.EventViewModel
 
 @Composable
 fun EventsScreen(
     onEventClick: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-    eventViewModel: EventViewModel = viewModel()
+    viewModel: EventViewModel,
+    modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize()) {
+        val eventList by viewModel.events.collectAsState()
         var openAlertDialog by remember { mutableStateOf(false) }
 
         EventList(
-            eventList = eventViewModel.events,
-            onEventClick = onEventClick
+            eventList = eventList,
+            onEventClick = onEventClick,
+            viewModel = viewModel
         )
 
         // Floating action button
@@ -85,7 +85,7 @@ fun EventsScreen(
                         onDismissRequest = { openAlertDialog = false },
                         onConfirmation = {
                             openAlertDialog = false
-                            eventViewModel.addEvent(Event(99, newEventName))
+                            viewModel.addEvent(newEventName)
                             newEventName = ""
                         }
                     )
@@ -99,6 +99,7 @@ fun EventsScreen(
 fun EventList(
     eventList: List<Event>,
     onEventClick: (Int) -> Unit,
+    viewModel: EventViewModel,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -108,7 +109,8 @@ fun EventList(
         items(eventList) { event ->
             EventItem(
                 event = event,
-                onClick = onEventClick
+                onClick = onEventClick,
+                viewModel = viewModel
             )
         }
     }
@@ -118,8 +120,11 @@ fun EventList(
 fun EventItem(
     event: Event,
     onClick: (Int) -> Unit,
+    viewModel: EventViewModel,
     modifier: Modifier = Modifier,
 ) {
+    val totalCost by viewModel.getTotalCost(event.id).collectAsState()
+
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -143,7 +148,7 @@ fun EventItem(
                 )
                 Text(text = event.eventName, style = MaterialTheme.typography.bodyMedium)
             }
-            Text(text = stringResource(R.string.cost_in_rs, event.totalCost), style = MaterialTheme.typography.bodyMedium)
+            Text(text = stringResource(R.string.cost_in_rs, totalCost), style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -194,31 +199,33 @@ fun AddEventDialog(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun EventListPreview(eventViewModel: EventViewModel = viewModel()) {
-    EventList(
-        eventList = eventViewModel.events,
-        onEventClick = {}
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun EventCardPreview() {
-    EventItem(
-        event = getEventList()[0],
-        onClick = {}
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun AddEventDialogPreview() {
-    AddEventDialog(
-        value = "",
-        onValueChange = {},
-        onDismissRequest = {},
-        onConfirmation = {}
-    )
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun EventListPreview(eventScreenViewModel: EventScreenViewModel = viewModel()) {
+//    EventList(
+//        eventList = listOf(),
+//        onEventClick = {},
+//        viewModel = viewModel()
+//    )
+//}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun EventCardPreview() {
+//    EventItem(
+//        event = Event(eventName = "Event 1"),
+//        onClick = {},
+//        viewModel = viewModel()
+//    )
+//}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun AddEventDialogPreview() {
+//    AddEventDialog(
+//        value = "",
+//        onValueChange = {},
+//        onDismissRequest = {},
+//        onConfirmation = {}
+//    )
+//}
