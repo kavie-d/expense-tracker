@@ -1,8 +1,10 @@
-package com.example.expensetracker.ui.screens.events
+package com.example.expensetracker.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,11 +13,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -29,11 +36,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.expensetracker.R
 import com.example.expensetracker.entities.Event
+import com.example.expensetracker.ui.shared.components.InputDialog
 import com.example.expensetracker.viewModels.EventViewModel
 
 @Composable
@@ -42,10 +52,15 @@ fun EventsScreen(
     viewModel: EventViewModel,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 12.dp)
+    ) {
         val eventList by viewModel.events.collectAsState()
-        var openAlertDialog by remember { mutableStateOf(false) }
+        var openAddEventDialog by remember { mutableStateOf(false) }
 
+        // Event list
         EventList(
             eventList = eventList,
             onEventClick = onEventClick,
@@ -60,8 +75,9 @@ fun EventsScreen(
                 .padding(end = 24.dp, bottom = 48.dp)
         ) {
             FloatingActionButton(
-                onClick = { openAlertDialog = true },
-                containerColor = MaterialTheme.colorScheme.secondaryContainer
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                onClick = { openAddEventDialog = true }
             ) {
                 Icon(
                     imageVector = Icons.Filled.Add,
@@ -78,13 +94,16 @@ fun EventsScreen(
             var newEventName by rememberSaveable { mutableStateOf("") }
 
             when {
-                openAlertDialog -> {
+                openAddEventDialog -> {
                     AddEventDialog(
                         value = newEventName,
                         onValueChange = { newValue -> newEventName = newValue },
-                        onDismissRequest = { openAlertDialog = false },
+                        onDismissRequest = {
+                            openAddEventDialog = false
+                            newEventName = ""
+                       },
                         onConfirmation = {
-                            openAlertDialog = false
+                            openAddEventDialog = false
                             viewModel.addEvent(newEventName)
                             newEventName = ""
                         }
@@ -104,6 +123,7 @@ fun EventList(
 ) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(top = 24.dp),
         modifier = modifier
     ) {
         items(eventList) { event ->
@@ -128,27 +148,29 @@ fun EventItem(
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
         ),
         onClick = { onClick(event.id) },
-        modifier = modifier.padding(horizontal = 12.dp)
+        modifier = modifier
     ) {
-        Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 24.dp)
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null
-                )
-                Text(text = event.eventName, style = MaterialTheme.typography.bodyMedium)
+                Text(text = event.eventName, style = MaterialTheme.typography.bodyLarge)
+                Text(text = stringResource(R.string.cost_in_rs, totalCost))
             }
-            Text(text = stringResource(R.string.cost_in_rs, totalCost), style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = event.getFormattedDate(),
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
     }
 }
@@ -161,41 +183,19 @@ fun AddEventDialog(
     modifier: Modifier = Modifier,
     value: String = "",
 ) {
-    Dialog(onDismissRequest = { onDismissRequest() }) {
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ),
-            modifier = modifier
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(text = "Add Event", style = MaterialTheme.typography.headlineSmall)
-                OutlinedTextField(
-                    value = value,
-                    onValueChange = onValueChange,
-                    textStyle = MaterialTheme.typography.bodyMedium,
-                    placeholder = { Text("Event name") },
-                    modifier = Modifier.padding(top = 24.dp)
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    TextButton(
-                        onClick = { onDismissRequest() },
-                        modifier = Modifier.padding(8.dp),
-                    ) {
-                        Text("Cancel")
-                    }
-                    TextButton(
-                        onClick = { onConfirmation() },
-                        modifier = Modifier.padding(8.dp),
-                    ) {
-                        Text("Add")
-                    }
-                }
-            }
-        }
+    InputDialog(
+        dialogTitle = stringResource(R.string.txt_add_event),
+        onDismissRequest = onDismissRequest,
+        onConfirmation = onConfirmation,
+        confirmationText = stringResource(R.string.btn_txt_add),
+        modifier = modifier
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = { Text(stringResource(R.string.txt_field_event_name)) },
+            singleLine = true
+        )
     }
 }
 
@@ -211,7 +211,7 @@ fun AddEventDialog(
 //
 //@Preview(showBackground = true)
 //@Composable
-//fun EventCardPreview() {
+//fun EventItemPreview() {
 //    EventItem(
 //        event = Event(eventName = "Event 1"),
 //        onClick = {},

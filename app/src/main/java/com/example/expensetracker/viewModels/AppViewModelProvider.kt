@@ -15,7 +15,10 @@ object AppViewModelProvider {
         }
 
         initializer {
-            ExpenseViewModel(initAppContainer().container.expenseRepository)
+            ExpenseViewModel(
+                initAppContainer().container.expenseRepository,
+                initAppContainer().container.eventsRepository
+            )
         }
 
     }

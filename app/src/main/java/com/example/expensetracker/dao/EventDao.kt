@@ -23,7 +23,7 @@ interface EventDao {
     @Query("SELECT * FROM events WHERE id = :eventId")
     fun getEvent(eventId: Int): Flow<Event>
 
-    @Query("SELECT * FROM events ORDER BY created_at ASC")
+    @Query("SELECT * FROM events ORDER BY created_at DESC")
     fun getAllEvents(): Flow<List<Event>>
 
     @Query("SELECT SUM(expense_cost) FROM expenses WHERE event_id = :eventId")

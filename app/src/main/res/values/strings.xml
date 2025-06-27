@@ -6,4 +6,17 @@
     <string name="back_button">Back</string>
     <string name="app_screen_title_events">Expense Tracker</string>
     <string name="app_screen_title_expenses">Event Details</string>
+    <string name="txt_field_event_name">Event name</string>
+    <string name="txt_field_expense_name">Expense name</string>
+    <string name="txt_field_expense_cost">Event cost</string>
+    <string name="btn_txt_cancel">Cancel</string>
+    <string name="btn_txt_add">Add</string>
+    <string name="search">Search</string>
+    <string name="txt_ok">Ok</string>
+    <string name="btn_txt_update">Update</string>
+    <string name="txt_add_event">Add Event</string>
+    <string name="txt_update_event">Update Event</string>
+    <string name="txt_add_expense">Add Expense</string>
+    <string name="txt_delete_event">Delete Event</string>
+    <string name="btn_txt_delete">Delete</string>
 </resources>
