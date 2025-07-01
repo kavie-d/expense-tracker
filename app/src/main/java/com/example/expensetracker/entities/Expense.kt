@@ -1,7 +1,13 @@
 package com.example.expensetracker.entities
 
+import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "expenses")
 data class Expense(
-    val id: Int,
-    var expenseName: String,
-    var expenseCost: Int = 0
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @ColumnInfo("event_id") val eventId: Int = 0,
+    @ColumnInfo("expense_name") var expenseName: String,
+    @ColumnInfo("expense_cost") var expenseCost: Int = 0
 )
