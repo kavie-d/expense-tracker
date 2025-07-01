@@ -2,7 +2,6 @@ package com.example.expensetracker
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,12 +9,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
@@ -30,7 +27,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
@@ -49,7 +45,6 @@ import com.example.expensetracker.ui.screens.ExpensesScreen
 import com.example.expensetracker.viewModels.AppViewModelProvider
 import com.example.expensetracker.viewModels.EventViewModel
 import com.example.expensetracker.viewModels.ExpenseViewModel
-import kotlin.math.exp
 
 enum class AppScreen(@StringRes val title: Int) {
     Events(title = R.string.app_screen_title_events),
@@ -72,16 +67,6 @@ fun Navigation(
 
     val totalCost by expenseViewModel.totalCost.collectAsState()
 
-    var openAddExpenseDialog by rememberSaveable(currentScreen == AppScreen.Expenses) {
-        mutableStateOf(false)
-    }
-    var openUpdateEventDialog by rememberSaveable(currentScreen == AppScreen.Expenses) {
-        mutableStateOf(false)
-    }
-    var openDeleteEventDialog by rememberSaveable(currentScreen == AppScreen.Expenses) {
-        mutableStateOf(false)
-    }
-
     val scrollBehavior = when (currentScreen) {
         AppScreen.Events -> TopAppBarDefaults.enterAlwaysScrollBehavior()
         AppScreen.Expenses -> TopAppBarDefaults.pinnedScrollBehavior()
@@ -101,14 +86,17 @@ fun Navigation(
                 canNavigateBack = navController.previousBackStackEntry != null,
                 onBackClick = { navController.popBackStack() },
                 scrollBehavior = scrollBehavior,
-                onAddExpenseClick = { openAddExpenseDialog = true },
-                onUpdateEventClick = { openUpdateEventDialog = true },
-                onDeleteEventClick = { openDeleteEventDialog = true }
+                onAddExpenseClick = { expenseViewModel.openAddExpenseDialog = true }
             )
         },
         bottomBar = {
             if (currentScreen == AppScreen.Expenses) {
                 BottomTotalCostCard(totalCost = totalCost)
+            }
+        },
+        floatingActionButton = {
+            if (currentScreen == AppScreen.Events) {
+                EventScreenFAB(openAddEventDialog = { eventViewModel.openAddEventDialog = true })
             }
         },
         modifier = modifier
@@ -136,14 +124,7 @@ fun Navigation(
             ) { backstackEntry ->
                 ExpensesScreen(
                     eventId = requireNotNull(backstackEntry.arguments?.getInt("eventId")),
-                    viewModel = expenseViewModel,
-                    openAddExpenseDialog = openAddExpenseDialog,
-                    openUpdateEventDialog = openUpdateEventDialog,
-                    openDeleteEventDialog = openDeleteEventDialog,
-                    onDismissAddExpenseDialog = { openAddExpenseDialog = false },
-                    onDismissUpdateEventDialog = { openUpdateEventDialog = false },
-                    onDismissDeleteEventDialog = { openDeleteEventDialog = false },
-                    navigateBack = { navController.popBackStack() }
+                    viewModel = expenseViewModel
                 )
             }
         }
@@ -163,8 +144,7 @@ fun AppBar(
     canNavigateBack: Boolean,
     onBackClick: () -> Unit,
     onAddExpenseClick: () -> Unit,
-    onUpdateEventClick: () -> Unit,
-    onDeleteEventClick: () -> Unit
+    modifier: Modifier = Modifier
 ) {
     LargeTopAppBar(
         title = {
@@ -181,35 +161,17 @@ fun AppBar(
             }
         },
         actions = {
-            if (currentScreen == AppScreen.Events) {
-                IconButton(onClick = { /* do something */ }) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search"
-                    )
-                }
-            } else if (currentScreen == AppScreen.Expenses) {
+            if (currentScreen == AppScreen.Expenses) {
                 IconButton(onClick = onAddExpenseClick) {
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "Add"
                     )
                 }
-                IconButton(onClick = onUpdateEventClick) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit"
-                    )
-                }
-                IconButton(onClick = onDeleteEventClick) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete"
-                    )
-                }
             }
         },
-        scrollBehavior = scrollBehavior
+        scrollBehavior = scrollBehavior,
+        modifier = modifier
     )
 }
 
@@ -221,7 +183,9 @@ fun BottomTotalCostCard(
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp)
     ) {
         Row(
             horizontalArrangement = Arrangement.SpaceAround,
@@ -232,5 +196,23 @@ fun BottomTotalCostCard(
             Text(text = stringResource(R.string.string_total), fontWeight = FontWeight.Bold)
             Text(text = stringResource(R.string.cost_in_rs, totalCost.toString()), fontWeight = FontWeight.Bold)
         }
+    }
+}
+
+@Composable
+fun EventScreenFAB(
+    openAddEventDialog: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    FloatingActionButton(
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        onClick = openAddEventDialog,
+        modifier = modifier
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Add,
+            contentDescription = stringResource(R.string.fab_add)
+        )
     }
 }

@@ -1,8 +1,10 @@
 package com.example.expensetracker.viewModels
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.expensetracker.entities.Event
 import com.example.expensetracker.entities.EventWithExpenses
 import com.example.expensetracker.entities.Expense
 import com.example.expensetracker.repositories.EventsRepository
@@ -23,6 +25,16 @@ class ExpenseViewModel(
     private val _totalCost = MutableStateFlow(0)
     val totalCost: StateFlow<Int> get() = _totalCost
 
+    var openAddExpenseDialog by mutableStateOf(false)
+    var openUpdateExpenseDialog by mutableStateOf(false)
+    var openDeleteExpenseDialog by mutableStateOf(false)
+
+    var newExpenseName by mutableStateOf("")
+    var newExpenseCost by mutableStateOf("")
+
+    private var _selectedExpense = mutableStateOf<Expense?>(null)
+    val selectedExpense: Expense? get() = _selectedExpense.value
+
     fun loadData(eventId: Int) {
         viewModelScope.launch {
             expensesRepository.getEventWithExpenses(eventId)
@@ -39,16 +51,67 @@ class ExpenseViewModel(
         private const val TIMEOUT_MILLIS = 5_000L
     }
 
-    fun addExpense(eventId: Int, expenseName: String, expenseCost: Int) = viewModelScope.launch {
+    private fun addExpense(eventId: Int, expenseName: String, expenseCost: Int) = viewModelScope.launch {
         expensesRepository.insert(Expense(eventId = eventId, expenseName = expenseName, expenseCost = expenseCost))
     }
 
-    fun updateEvent(event: Event) = viewModelScope.launch {
-        eventsRepository.update(event)
+    private fun updateExpense(expense: Expense) = viewModelScope.launch {
+        expensesRepository.update(expense)
     }
 
-    fun deleteEvent(event: Event) = viewModelScope.launch {
-        eventsRepository.delete(event)
+    private fun deleteExpense(expense: Expense) = viewModelScope.launch {
+        expensesRepository.delete(expense)
+    }
+
+    fun onAddExpenseDialogDismiss() {
+        openAddExpenseDialog = false
+        newExpenseName = ""
+        newExpenseCost = ""
+    }
+
+    fun onAddExpenseDialogConfirm(eventId: Int) {
+        addExpense(
+            eventId = eventId,
+            expenseName = newExpenseName,
+            expenseCost = newExpenseCost.toInt()
+        )
+        openAddExpenseDialog = false
+        newExpenseName = ""
+        newExpenseCost = ""
+    }
+
+    fun setSelectedExpense(expense: Expense) {
+        _selectedExpense.value = expense
+    }
+
+    fun onSelectedExpenseNameChange(name: String) {
+        _selectedExpense.value = _selectedExpense.value?.copy(expenseName = name)
+    }
+
+    fun onSelectedExpenseCostChange(cost: String) {
+        _selectedExpense.value = _selectedExpense.value?.copy(expenseCost = cost.toInt())
+    }
+
+    fun onUpdateExpenseDialogDismiss() {
+        openUpdateExpenseDialog = false
+        _selectedExpense.value = null
+    }
+
+    fun onUpdateExpenseDialogConfirm() {
+        selectedExpense?.let { updateExpense(it) }
+        openUpdateExpenseDialog = false
+        _selectedExpense.value = null
+    }
+
+    fun onDeleteExpenseDialogDismiss() {
+        openDeleteExpenseDialog = false
+        _selectedExpense.value = null
+    }
+
+    fun onDeleteExpenseDialogConfirm() {
+        selectedExpense?.let { deleteExpense(it) }
+        openDeleteExpenseDialog = false
+        _selectedExpense.value = null
     }
 
 }

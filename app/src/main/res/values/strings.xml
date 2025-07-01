@@ -19,4 +19,8 @@
     <string name="txt_add_expense">Add Expense</string>
     <string name="txt_delete_event">Delete Event</string>
     <string name="btn_txt_delete">Delete</string>
+    <string name="txt_field_new_event_name">New event name</string>
+    <string name="txt_update_expense">Update Expense</string>
+    <string name="txt_delete_expense">Delete Expense</string>
+    <string name="content_description_more_options">More options</string>
 </resources>

@@ -1,9 +1,13 @@
 package com.example.expensetracker.viewModels
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.expensetracker.entities.Event
 import com.example.expensetracker.repositories.EventsRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -11,6 +15,15 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class EventViewModel(private val eventsRepository: EventsRepository): ViewModel() {
+
+    var openAddEventDialog by mutableStateOf(false)
+    var openUpdateEventDialog by mutableStateOf(false)
+    var openDeleteEventDialog by mutableStateOf(false)
+
+    var newEventName by mutableStateOf("")
+
+    private var _selectedEvent = mutableStateOf<Event?>(null)
+    val selectedEvent: Event? get() = _selectedEvent.value
 
     companion object {
         private const val TIMEOUT_MILLIS = 5_000L
@@ -31,8 +44,57 @@ class EventViewModel(private val eventsRepository: EventsRepository): ViewModel(
             initialValue = 0
         )
 
-    fun addEvent(eventName: String) = viewModelScope.launch {
+    private fun addEvent(eventName: String) = viewModelScope.launch {
         eventsRepository.insert(Event(eventName = eventName))
+    }
+
+    private fun updateEvent(event: Event) = viewModelScope.launch {
+        eventsRepository.update(event)
+    }
+
+    private fun deleteEvent(event: Event) = viewModelScope.launch {
+        eventsRepository.delete(event)
+    }
+
+    fun onAddEventDialogDismiss() {
+        openAddEventDialog = false
+        newEventName = ""
+    }
+
+    fun onAddEventDialogConfirm() {
+        addEvent(newEventName)
+        openAddEventDialog = false
+        newEventName = ""
+    }
+
+    fun setSelectedEvent(event: Event) {
+        _selectedEvent.value = event
+    }
+
+    fun onSelectedEventNameChange(name: String) {
+        _selectedEvent.value = _selectedEvent.value?.copy(eventName = name)
+    }
+
+    fun onUpdateEventDialogDismiss() {
+        openUpdateEventDialog = false
+        _selectedEvent.value = null
+    }
+
+    fun onUpdateEventDialogConfirm() {
+        selectedEvent?.let { updateEvent(it) }
+        openUpdateEventDialog = false
+        _selectedEvent.value = null
+    }
+
+    fun onDeleteEventDialogDismiss() {
+        openDeleteEventDialog = false
+        _selectedEvent.value = null
+    }
+
+    fun onDeleteEventDialogConfirm() {
+        selectedEvent?.let { deleteEvent(it) }
+        openDeleteEventDialog = false
+        _selectedEvent.value = null
     }
 
 }

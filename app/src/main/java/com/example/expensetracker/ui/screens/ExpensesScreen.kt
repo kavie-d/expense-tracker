@@ -1,46 +1,39 @@
 package com.example.expensetracker.ui.screens
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import com.example.expensetracker.R
-import com.example.expensetracker.entities.Event
-import com.example.expensetracker.entities.EventWithExpenses
 import com.example.expensetracker.entities.Expense
 import com.example.expensetracker.ui.shared.components.InputDialog
 import com.example.expensetracker.viewModels.ExpenseViewModel
@@ -49,14 +42,7 @@ import com.example.expensetracker.viewModels.ExpenseViewModel
 fun ExpensesScreen(
     eventId: Int,
     viewModel: ExpenseViewModel,
-    onDismissAddExpenseDialog: () -> Unit,
-    onDismissUpdateEventDialog: () -> Unit,
-    onDismissDeleteEventDialog: () -> Unit,
-    navigateBack: () -> Unit,
-    modifier: Modifier = Modifier,
-    openAddExpenseDialog: Boolean = false,
-    openUpdateEventDialog: Boolean = false,
-    openDeleteEventDialog: Boolean = false,
+    modifier: Modifier = Modifier
 ) {
     LaunchedEffect(eventId) {
         viewModel.loadData(eventId)
@@ -73,65 +59,44 @@ fun ExpensesScreen(
         }
 
         // Expense list
-        ExpenseList(expenseList = eventWithExpenses.expenses)
+        ExpenseList(
+            expenseList = eventWithExpenses.expenses,
+            onUpdateClick = { viewModel.openUpdateExpenseDialog = true },
+            onDeleteClick = { viewModel.openDeleteExpenseDialog = true },
+            setSelectedExpense = { viewModel.setSelectedExpense(it) }
+        )
 
         // Dialogs
         Box {
-            var newExpenseName by rememberSaveable { mutableStateOf("") }
-            var newExpenseCost by rememberSaveable { mutableStateOf("") }
-
             when {
-                openAddExpenseDialog -> {
+                viewModel.openAddExpenseDialog -> {
                     AddExpenseDialog(
-                        expenseName = newExpenseName,
-                        expenseCost = newExpenseCost,
-                        onExpenseNameChange = { newExpenseName = it },
-                        onExpenseCostChange = { newExpenseCost = it },
-                        onDismissRequest = {
-                            onDismissAddExpenseDialog()
-                            newExpenseName = ""
-                            newExpenseCost = ""
-                        },
-                        onConfirmation = {
-                            viewModel.addExpense(
-                                eventId = eventId,
-                                expenseName = newExpenseName,
-                                expenseCost = newExpenseCost.toInt()
-                            )
-                            onDismissAddExpenseDialog()
-                            newExpenseName = ""
-                            newExpenseCost = ""
-                        }
+                        expenseName = viewModel.newExpenseName,
+                        expenseCost = viewModel.newExpenseCost,
+                        onExpenseNameChange = { viewModel.newExpenseName = it },
+                        onExpenseCostChange = { viewModel.newExpenseCost = it },
+                        onDismissRequest = { viewModel.onAddExpenseDialogDismiss() },
+                        onConfirmation = { viewModel.onAddExpenseDialogConfirm(eventId) }
                     )
                 }
-            }
 
-            var eventName by rememberSaveable { mutableStateOf(eventWithExpenses.event.eventName) }
-
-            when {
-                openUpdateEventDialog -> {
-                    UpdateEventDialog(
-                        onValueChange = { eventName = it },
-                        onDismissRequest = onDismissUpdateEventDialog,
-                        onConfirmation = {
-                            val tempEvent = eventWithExpenses.event
-                            tempEvent.eventName = eventName
-                            viewModel.updateEvent(tempEvent)
-                            onDismissUpdateEventDialog()
-                        },
-                        value = eventName
-                    )
+                viewModel.openUpdateExpenseDialog -> {
+                    viewModel.selectedExpense?.let {
+                        UpdateExpenseDialog(
+                            expenseName = it.expenseName,
+                            expenseCost = it.expenseCost.toString(),
+                            onExpenseNameChange = { name -> viewModel.onSelectedExpenseNameChange(name) },
+                            onExpenseCostChange = { cost -> viewModel.onSelectedExpenseCostChange(cost) },
+                            onDismissRequest = { viewModel.onUpdateExpenseDialogDismiss() },
+                            onConfirmation = { viewModel.onUpdateExpenseDialogConfirm() }
+                        )
+                    }
                 }
-            }
 
-            when {
-                openDeleteEventDialog -> {
-                    DeleteEventDialog(
-                        onDismissRequest = onDismissDeleteEventDialog,
-                        onConfirmation = {
-                            viewModel.deleteEvent(eventWithExpenses.event)
-                            navigateBack()
-                        }
+                viewModel.openDeleteExpenseDialog -> {
+                    DeleteExpenseDialog(
+                        onDismissRequest = { viewModel.onDeleteExpenseDialogDismiss() },
+                        onConfirmation = { viewModel.onDeleteExpenseDialogConfirm() }
                     )
                 }
             }
@@ -143,6 +108,9 @@ fun ExpensesScreen(
 @Composable
 fun ExpenseList(
     expenseList: List<Expense>?,
+    onUpdateClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    setSelectedExpense: (Expense) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (expenseList != null) {
@@ -151,7 +119,12 @@ fun ExpenseList(
             modifier = modifier
         ) {
             items(expenseList) { expense ->
-                ExpenseItem(expense = expense)
+                ExpenseItem(
+                    expense = expense,
+                    onUpdateClick = onUpdateClick,
+                    onDeleteClick = onDeleteClick,
+                    setSelectedExpense = setSelectedExpense
+                )
             }
         }
     } else {
@@ -167,8 +140,13 @@ fun ExpenseList(
 @Composable
 fun ExpenseItem(
     expense: Expense,
+    onUpdateClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    setSelectedExpense: (Expense) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -178,46 +156,38 @@ fun ExpenseItem(
     ) {
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
+            // Expense name
             Text(text = expense.expenseName)
-            Text(text = stringResource(R.string.cost_in_rs, expense.expenseCost))
-        }
-    }
-}
 
-@Composable
-fun TotalCostCard(
-    modifier: Modifier = Modifier,
-    totalCost: Int = 0
-) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 6.dp
-        ),
-        border = BorderStroke(1.dp, Color.Gray),
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = null,
-                modifier = Modifier
-                    .padding(end = 20.dp)
-                    .size(40.dp)
-            )
-            Column {
-                Text(text = stringResource(R.string.string_total))
-                Text(text = stringResource(R.string.cost_in_rs, totalCost))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Expense cost
+                Text(text = stringResource(R.string.cost_in_rs, expense.expenseCost))
+
+                // Menu
+                Box {
+                    IconButton(onClick = { menuExpanded = !menuExpanded }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.content_description_more_options))
+                    }
+                    when {
+                        menuExpanded -> {
+                            setSelectedExpense(expense)
+                            ExpenseItemMenu(
+                                expanded = true,
+                                onDismissRequest = { menuExpanded = false },
+                                onUpdateClick = onUpdateClick,
+                                onDeleteClick = onDeleteClick,
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -257,45 +227,78 @@ fun AddExpenseDialog(
 }
 
 @Composable
-fun UpdateEventDialog(
-    onValueChange: (String) -> Unit,
+fun UpdateExpenseDialog(
+    onExpenseNameChange: (String) -> Unit,
+    onExpenseCostChange: (String) -> Unit,
     onDismissRequest: () -> Unit,
     onConfirmation: () -> Unit,
     modifier: Modifier = Modifier,
-    value: String = ""
+    expenseName: String,
+    expenseCost: String
 ) {
     InputDialog(
-        dialogTitle = stringResource(R.string.txt_update_event),
+        dialogTitle = stringResource(R.string.txt_update_expense),
         onDismissRequest = onDismissRequest,
         onConfirmation = onConfirmation,
         confirmationText = stringResource(R.string.btn_txt_update),
         modifier = modifier
     ) {
         OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            placeholder = { Text(stringResource(R.string.txt_field_event_name)) },
+            value = expenseName,
+            onValueChange = onExpenseNameChange,
+            placeholder = { Text(stringResource(R.string.txt_field_expense_name)) },
+            singleLine = true
+        )
+        OutlinedTextField(
+            value = expenseCost,
+            onValueChange = onExpenseCostChange,
+            placeholder = { Text(stringResource(R.string.txt_field_expense_cost)) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true
         )
     }
 }
 
 @Composable
-fun DeleteEventDialog(
+fun DeleteExpenseDialog(
     onDismissRequest: () -> Unit,
     onConfirmation: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     InputDialog(
-        dialogTitle = stringResource(R.string.txt_delete_event),
+        dialogTitle = stringResource(R.string.txt_delete_expense),
         onDismissRequest = onDismissRequest,
         onConfirmation = onConfirmation,
         confirmationText = stringResource(R.string.btn_txt_delete),
         modifier = modifier
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text("Confirm deletion.")
-        }
+        Text("Are you sure?")
+    }
+}
+
+@Composable
+fun ExpenseItemMenu(
+    expanded: Boolean,
+    onDismissRequest: () -> Unit,
+    onUpdateClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismissRequest,
+        modifier = modifier
+    ) {
+        DropdownMenuItem(
+            text = { Text("Update") },
+            leadingIcon = { Icon(imageVector = Icons.Default.Edit, contentDescription = null) },
+            onClick = onUpdateClick
+        )
+        DropdownMenuItem(
+            text = { Text("Delete") },
+            leadingIcon = { Icon(imageVector = Icons.Default.Delete, contentDescription = null) },
+            onClick = onDeleteClick
+        )
     }
 }
 

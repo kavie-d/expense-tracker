@@ -1,6 +1,5 @@
 package com.example.expensetracker.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
@@ -20,13 +18,11 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -36,11 +32,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import com.example.expensetracker.R
 import com.example.expensetracker.entities.Event
 import com.example.expensetracker.ui.shared.components.InputDialog
@@ -58,55 +51,47 @@ fun EventsScreen(
             .padding(horizontal = 12.dp)
     ) {
         val eventList by viewModel.events.collectAsState()
-        var openAddEventDialog by remember { mutableStateOf(false) }
 
         // Event list
         EventList(
             eventList = eventList,
             onEventClick = onEventClick,
+            setSelectedEvent = { viewModel.setSelectedEvent(it) },
+            onUpdateClick = { viewModel.openUpdateEventDialog = true },
+            onDeleteClick = { viewModel.openDeleteEventDialog = true },
             viewModel = viewModel
         )
-
-        // Floating action button
-        Box(
-            contentAlignment = Alignment.BottomEnd,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(end = 24.dp, bottom = 48.dp)
-        ) {
-            FloatingActionButton(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                onClick = { openAddEventDialog = true }
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = stringResource(R.string.fab_add)
-                )
-            }
-        }
 
         // Add event dialog
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier.fillMaxSize()
         ) {
-            var newEventName by rememberSaveable { mutableStateOf("") }
-
             when {
-                openAddEventDialog -> {
+                viewModel.openAddEventDialog -> {
                     AddEventDialog(
-                        value = newEventName,
-                        onValueChange = { newValue -> newEventName = newValue },
-                        onDismissRequest = {
-                            openAddEventDialog = false
-                            newEventName = ""
-                       },
-                        onConfirmation = {
-                            openAddEventDialog = false
-                            viewModel.addEvent(newEventName)
-                            newEventName = ""
-                        }
+                        value = viewModel.newEventName,
+                        onValueChange = { viewModel.newEventName = it },
+                        onDismissRequest = { viewModel.onAddEventDialogDismiss() },
+                        onConfirmation = { viewModel.onAddEventDialogConfirm() }
+                    )
+                }
+
+                viewModel.openUpdateEventDialog -> {
+                    viewModel.selectedEvent?.let {
+                        UpdateEventDialog(
+                            value = it.eventName,
+                            onValueChange = { name -> viewModel.onSelectedEventNameChange(name) },
+                            onDismissRequest = { viewModel.onUpdateEventDialogDismiss() },
+                            onConfirmation = { viewModel.onUpdateEventDialogConfirm() }
+                        )
+                    }
+                }
+
+                viewModel.openDeleteEventDialog -> {
+                    DeleteEventDialog(
+                        onDismissRequest = { viewModel.onDeleteEventDialogDismiss() },
+                        onConfirmation = { viewModel.onDeleteEventDialogConfirm() }
                     )
                 }
             }
@@ -118,6 +103,9 @@ fun EventsScreen(
 fun EventList(
     eventList: List<Event>,
     onEventClick: (Int) -> Unit,
+    setSelectedEvent: (Event) -> Unit,
+    onUpdateClick: () -> Unit,
+    onDeleteClick: () -> Unit,
     viewModel: EventViewModel,
     modifier: Modifier = Modifier
 ) {
@@ -130,6 +118,9 @@ fun EventList(
             EventItem(
                 event = event,
                 onClick = onEventClick,
+                setSelectedEvent = setSelectedEvent,
+                onUpdateClick = onUpdateClick,
+                onDeleteClick = onDeleteClick,
                 viewModel = viewModel
             )
         }
@@ -140,9 +131,14 @@ fun EventList(
 fun EventItem(
     event: Event,
     onClick: (Int) -> Unit,
+    setSelectedEvent: (Event) -> Unit,
+    onUpdateClick: () -> Unit,
+    onDeleteClick: () -> Unit,
     viewModel: EventViewModel,
     modifier: Modifier = Modifier,
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
     val totalCost by viewModel.getTotalCost(event.id).collectAsState()
 
     Card(
@@ -153,24 +149,50 @@ fun EventItem(
         onClick = { onClick(event.id) },
         modifier = modifier
     ) {
-        Column(
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 24.dp)
         ) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Event name
+                Text(text = event.eventName, style = MaterialTheme.typography.bodyLarge)
+
+                // Date
+                Text(
+                    text = event.getFormattedDate(),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+
             Row(
                 verticalAlignment = Alignment.Top,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(text = event.eventName, style = MaterialTheme.typography.bodyLarge)
+                // Total cost
                 Text(text = stringResource(R.string.cost_in_rs, totalCost))
+
+                // Menu
+                Box {
+                    IconButton(onClick = { menuExpanded = !menuExpanded }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.content_description_more_options))
+                    }
+                    when {
+                        menuExpanded -> {
+                            setSelectedEvent(event)
+                            ExpenseItemMenu(
+                                expanded = true,
+                                onDismissRequest = { menuExpanded = false },
+                                onUpdateClick = onUpdateClick,
+                                onDeleteClick = onDeleteClick,
+                            )
+                        }
+                    }
+                }
             }
-            Text(
-                text = event.getFormattedDate(),
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 4.dp)
-            )
         }
     }
 }
@@ -195,6 +217,73 @@ fun AddEventDialog(
             onValueChange = onValueChange,
             placeholder = { Text(stringResource(R.string.txt_field_event_name)) },
             singleLine = true
+        )
+    }
+}
+
+@Composable
+fun UpdateEventDialog(
+    onValueChange: (String) -> Unit,
+    onDismissRequest: () -> Unit,
+    onConfirmation: () -> Unit,
+    modifier: Modifier = Modifier,
+    value: String = "",
+) {
+    InputDialog(
+        dialogTitle = stringResource(R.string.txt_update_event),
+        onDismissRequest = onDismissRequest,
+        onConfirmation = onConfirmation,
+        confirmationText = stringResource(R.string.btn_txt_update),
+        modifier = modifier
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = { Text(stringResource(R.string.txt_field_event_name)) },
+            singleLine = true
+        )
+    }
+}
+
+@Composable
+fun DeleteEventDialog(
+    onDismissRequest: () -> Unit,
+    onConfirmation: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    InputDialog(
+        dialogTitle = stringResource(R.string.txt_delete_event),
+        onDismissRequest = onDismissRequest,
+        onConfirmation = onConfirmation,
+        confirmationText = stringResource(R.string.btn_txt_delete),
+        modifier = modifier
+    ) {
+        Text("Are you sure?")
+    }
+}
+
+@Composable
+fun EventItemMenu(
+    expanded: Boolean,
+    onDismissRequest: () -> Unit,
+    onUpdateClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismissRequest,
+        modifier = modifier
+    ) {
+        DropdownMenuItem(
+            text = { Text("Update") },
+            leadingIcon = { Icon(imageVector = Icons.Default.Edit, contentDescription = null) },
+            onClick = onUpdateClick
+        )
+        DropdownMenuItem(
+            text = { Text("Delete") },
+            leadingIcon = { Icon(imageVector = Icons.Default.Delete, contentDescription = null) },
+            onClick = onDeleteClick
         )
     }
 }
