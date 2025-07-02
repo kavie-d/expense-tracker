@@ -35,6 +35,11 @@ class ExpenseViewModel(
     private var _selectedExpense = mutableStateOf<Expense?>(null)
     val selectedExpense: Expense? get() = _selectedExpense.value
 
+    var isAddExpenseNameError by mutableStateOf(false)
+    var isAddExpenseCostError by mutableStateOf(false)
+    var isUpdateExpenseNameError by mutableStateOf(false)
+    var isUpdateExpenseCostError by mutableStateOf(false)
+
     fun loadData(eventId: Int) {
         viewModelScope.launch {
             expensesRepository.getEventWithExpenses(eventId)
@@ -67,9 +72,24 @@ class ExpenseViewModel(
         openAddExpenseDialog = false
         newExpenseName = ""
         newExpenseCost = ""
+        isAddExpenseNameError = false
+        isAddExpenseCostError = false
     }
 
     fun onAddExpenseDialogConfirm(eventId: Int) {
+        isAddExpenseNameError = false
+        isAddExpenseCostError = false
+
+        if (!validateExpenseName(newExpenseName)) {
+            isAddExpenseNameError = true
+            return
+        }
+
+        if (!validateExpenseCost(newExpenseCost)) {
+            isAddExpenseCostError = true
+            return
+        }
+
         addExpense(
             eventId = eventId,
             expenseName = newExpenseName,
@@ -89,16 +109,38 @@ class ExpenseViewModel(
     }
 
     fun onSelectedExpenseCostChange(cost: String) {
-        _selectedExpense.value = _selectedExpense.value?.copy(expenseCost = cost.toInt())
+        val parsed = cost.toIntOrNull()
+        if (parsed != null) {
+            _selectedExpense.value = _selectedExpense.value?.copy(expenseCost = parsed)
+        }
     }
 
     fun onUpdateExpenseDialogDismiss() {
         openUpdateExpenseDialog = false
         _selectedExpense.value = null
+        isUpdateExpenseNameError = false
+        isUpdateExpenseCostError = false
     }
 
     fun onUpdateExpenseDialogConfirm() {
-        selectedExpense?.let { updateExpense(it) }
+        isUpdateExpenseNameError = false
+        isUpdateExpenseCostError = false
+
+        val tempExpense = selectedExpense
+        if (tempExpense != null) {
+            if (!validateExpenseName(tempExpense.expenseName)) {
+                isUpdateExpenseNameError = true
+                return
+            }
+
+            if (!validateExpenseCost(tempExpense.expenseCost.toString())) {
+                isUpdateExpenseCostError = true
+                return
+            }
+
+            selectedExpense?.let { updateExpense(it) }
+        }
+
         openUpdateExpenseDialog = false
         _selectedExpense.value = null
     }
@@ -112,6 +154,19 @@ class ExpenseViewModel(
         selectedExpense?.let { deleteExpense(it) }
         openDeleteExpenseDialog = false
         _selectedExpense.value = null
+    }
+
+    private fun validateExpenseName(expenseName: String): Boolean {
+        return expenseName.isNotEmpty()
+    }
+
+    private fun validateExpenseCost(expenseCost: String): Boolean {
+        return try {
+            val cost = expenseCost.toInt()
+            cost > 0
+        } catch (e: NumberFormatException) {
+            false
+        }
     }
 
 }

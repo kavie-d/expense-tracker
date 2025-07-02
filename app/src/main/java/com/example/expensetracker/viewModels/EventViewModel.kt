@@ -25,6 +25,9 @@ class EventViewModel(private val eventsRepository: EventsRepository): ViewModel(
     private var _selectedEvent = mutableStateOf<Event?>(null)
     val selectedEvent: Event? get() = _selectedEvent.value
 
+    var isAddEventNameError by mutableStateOf(false)
+    var isUpdateEventNameError by mutableStateOf(false)
+
     companion object {
         private const val TIMEOUT_MILLIS = 5_000L
     }
@@ -59,9 +62,17 @@ class EventViewModel(private val eventsRepository: EventsRepository): ViewModel(
     fun onAddEventDialogDismiss() {
         openAddEventDialog = false
         newEventName = ""
+        isAddEventNameError = false
     }
 
     fun onAddEventDialogConfirm() {
+        isAddEventNameError = false
+
+        if (!validateEventName(newEventName)) {
+            isAddEventNameError = true
+            return
+        }
+
         addEvent(newEventName)
         openAddEventDialog = false
         newEventName = ""
@@ -78,10 +89,22 @@ class EventViewModel(private val eventsRepository: EventsRepository): ViewModel(
     fun onUpdateEventDialogDismiss() {
         openUpdateEventDialog = false
         _selectedEvent.value = null
+        isUpdateEventNameError = false
     }
 
     fun onUpdateEventDialogConfirm() {
-        selectedEvent?.let { updateEvent(it) }
+        isUpdateEventNameError = false
+
+        val tempEvent = selectedEvent
+        if (tempEvent != null) {
+            if (!validateEventName(tempEvent.eventName)) {
+                isUpdateEventNameError = true
+                return
+            }
+
+            updateEvent(tempEvent)
+        }
+
         openUpdateEventDialog = false
         _selectedEvent.value = null
     }
@@ -97,4 +120,7 @@ class EventViewModel(private val eventsRepository: EventsRepository): ViewModel(
         _selectedEvent.value = null
     }
 
+    private fun validateEventName(eventName: String): Boolean {
+        return eventName.isNotEmpty()
+    }
 }

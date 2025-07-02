@@ -76,7 +76,9 @@ fun ExpensesScreen(
                         onExpenseNameChange = { viewModel.newExpenseName = it },
                         onExpenseCostChange = { viewModel.newExpenseCost = it },
                         onDismissRequest = { viewModel.onAddExpenseDialogDismiss() },
-                        onConfirmation = { viewModel.onAddExpenseDialogConfirm(eventId) }
+                        onConfirmation = { viewModel.onAddExpenseDialogConfirm(eventId) },
+                        isExpenseNameError = viewModel.isAddExpenseNameError,
+                        isExpenseCostError = viewModel.isAddExpenseCostError
                     )
                 }
 
@@ -88,7 +90,9 @@ fun ExpensesScreen(
                             onExpenseNameChange = { name -> viewModel.onSelectedExpenseNameChange(name) },
                             onExpenseCostChange = { cost -> viewModel.onSelectedExpenseCostChange(cost) },
                             onDismissRequest = { viewModel.onUpdateExpenseDialogDismiss() },
-                            onConfirmation = { viewModel.onUpdateExpenseDialogConfirm() }
+                            onConfirmation = { viewModel.onUpdateExpenseDialogConfirm() },
+                            isExpenseNameError = viewModel.isUpdateExpenseNameError,
+                            isExpenseCostError = viewModel.isUpdateExpenseCostError
                         )
                     }
                 }
@@ -201,7 +205,9 @@ fun AddExpenseDialog(
     onConfirmation: () -> Unit,
     modifier: Modifier = Modifier,
     expenseName: String = "",
-    expenseCost: String = ""
+    expenseCost: String = "",
+    isExpenseNameError: Boolean = false,
+    isExpenseCostError: Boolean = false
 ) {
     InputDialog(
         dialogTitle = stringResource(R.string.txt_add_expense),
@@ -213,15 +219,17 @@ fun AddExpenseDialog(
         OutlinedTextField(
             value = expenseName,
             onValueChange = onExpenseNameChange,
-            placeholder = { Text(stringResource(R.string.txt_field_expense_name)) },
-            singleLine = true
+            label = { Text(stringResource(if (!isExpenseNameError) R.string.txt_field_expense_name else R.string.txt_field_expense_name_error)) },
+            singleLine = true,
+            isError = isExpenseNameError
         )
         OutlinedTextField(
             value = expenseCost,
             onValueChange = onExpenseCostChange,
-            placeholder = { Text(stringResource(R.string.txt_field_expense_cost)) },
+            label = { Text(stringResource(if (!isExpenseCostError) R.string.txt_field_expense_cost else R.string.txt_field_expense_cost_error)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true
+            singleLine = true,
+            isError = isExpenseCostError
         )
     }
 }
@@ -234,7 +242,9 @@ fun UpdateExpenseDialog(
     onConfirmation: () -> Unit,
     modifier: Modifier = Modifier,
     expenseName: String,
-    expenseCost: String
+    expenseCost: String,
+    isExpenseNameError: Boolean = false,
+    isExpenseCostError: Boolean = false
 ) {
     InputDialog(
         dialogTitle = stringResource(R.string.txt_update_expense),
@@ -246,15 +256,17 @@ fun UpdateExpenseDialog(
         OutlinedTextField(
             value = expenseName,
             onValueChange = onExpenseNameChange,
-            placeholder = { Text(stringResource(R.string.txt_field_expense_name)) },
-            singleLine = true
+            label = { Text(stringResource(if (!isExpenseNameError) R.string.txt_field_expense_name else R.string.txt_field_expense_name_error)) },
+            singleLine = true,
+            isError = isExpenseNameError
         )
         OutlinedTextField(
             value = expenseCost,
             onValueChange = onExpenseCostChange,
-            placeholder = { Text(stringResource(R.string.txt_field_expense_cost)) },
+            label = { Text(stringResource(if (!isExpenseCostError) R.string.txt_field_expense_cost else R.string.txt_field_expense_cost_error)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true
+            singleLine = true,
+            isError = isExpenseCostError
         )
     }
 }

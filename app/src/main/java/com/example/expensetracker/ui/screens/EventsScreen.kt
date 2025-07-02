@@ -73,7 +73,8 @@ fun EventsScreen(
                         value = viewModel.newEventName,
                         onValueChange = { viewModel.newEventName = it },
                         onDismissRequest = { viewModel.onAddEventDialogDismiss() },
-                        onConfirmation = { viewModel.onAddEventDialogConfirm() }
+                        onConfirmation = { viewModel.onAddEventDialogConfirm() },
+                        isEventNameError = viewModel.isAddEventNameError
                     )
                 }
 
@@ -83,7 +84,8 @@ fun EventsScreen(
                             value = it.eventName,
                             onValueChange = { name -> viewModel.onSelectedEventNameChange(name) },
                             onDismissRequest = { viewModel.onUpdateEventDialogDismiss() },
-                            onConfirmation = { viewModel.onUpdateEventDialogConfirm() }
+                            onConfirmation = { viewModel.onUpdateEventDialogConfirm() },
+                            isEventNameError = viewModel.isUpdateEventNameError
                         )
                     }
                 }
@@ -204,6 +206,7 @@ fun AddEventDialog(
     onConfirmation: () -> Unit,
     modifier: Modifier = Modifier,
     value: String = "",
+    isEventNameError: Boolean = false
 ) {
     InputDialog(
         dialogTitle = stringResource(R.string.txt_add_event),
@@ -215,8 +218,9 @@ fun AddEventDialog(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            placeholder = { Text(stringResource(R.string.txt_field_event_name)) },
-            singleLine = true
+            label = { Text(stringResource(if (!isEventNameError) R.string.txt_field_event_name else R.string.txt_field_event_name_error)) },
+            singleLine = true,
+            isError = isEventNameError
         )
     }
 }
@@ -228,6 +232,7 @@ fun UpdateEventDialog(
     onConfirmation: () -> Unit,
     modifier: Modifier = Modifier,
     value: String = "",
+    isEventNameError: Boolean = false
 ) {
     InputDialog(
         dialogTitle = stringResource(R.string.txt_update_event),
@@ -239,8 +244,9 @@ fun UpdateEventDialog(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            placeholder = { Text(stringResource(R.string.txt_field_event_name)) },
-            singleLine = true
+            label = { Text(stringResource(if (!isEventNameError) R.string.txt_field_new_event_name else R.string.txt_field_event_name_error)) },
+            singleLine = true,
+            isError = isEventNameError
         )
     }
 }
